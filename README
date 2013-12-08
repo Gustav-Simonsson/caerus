@@ -1,0 +1,49 @@
+caerus
+====
+
+Introduction
+------------
+
+Experimental integration with the cryptsy.com exchange API [1]
+
+License is GNUBL.
+
+Copyright can be granted after providing author with beer.
+
+Usage
+-----
+
+Include as a rebar dependency and start the gen_server under your apps
+supervisor. See typespecs in the caerus module for the exported functions/API.
+
+Quick start:
+
+```sh
+rebar get-deps
+rebar compile
+./start.sh
+```
+
+Dependencies
+-----
+
+1. Erlang (tested with R16B02)
+2. rebar [2]
+2. curl (tested with version 7.32.0) (curl is launched as a Erlang port, this
+   may cause incompatibility on other *nix OSs due to different curl flags.
+3. The authenticated parts of the cryptsy API requires a active cryptsy account
+   and a public API key. See [1] below.
+
+Tested on Ubuntu 13.10 with Erlang R16B02
+
+Configuration
+-----
+
+See priv/config/local.config - without a configured cryptsy API key, only the
+non-authenticated parts of the cryptsy API is available.
+
+References
+-----
+
+1. https://www.cryptsy.com/pages/api
+2. https://github.com/rebar/rebar

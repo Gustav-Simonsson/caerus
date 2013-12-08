@@ -1,0 +1,15 @@
+{application, caerus,
+    [
+        {description, "caerus"},
+        {vsn, git},
+        {mod, {ca_app, []}},
+        {registered, []},
+        {applications, [
+            kernel,
+            stdlib,
+            lager,
+            crypto
+        ]},
+        {env, []}
+    ]
+}.
