@@ -50,6 +50,7 @@ pretty_print_single_market_data(MarketData) ->
     ok.
 
 pretty_print_my_trades(MyTrades) ->
+    
     ok.
 
 %%%============================================================================

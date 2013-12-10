@@ -26,7 +26,7 @@
 
 -define(SERVER, ?MODULE).
 
--define(CURL_TIMEOUT, 5000).
+-define(CURL_TIMEOUT, 50000).
 
 -record(s, {markets = []
            }).
@@ -122,7 +122,7 @@ do_view_market(CurName, Markets) ->
 do_view_my_trades() ->
     {ok, FNs} = file:list_dir(?MARKET_DATA_DIR),
     MyTrades = get_my_trades(FNs),
-    %ca_visuals:pretty_print_my_trades(MyTrades).
+    ca_visuals:pretty_print_my_trades(MyTrades),
     ok.
 
 get_my_trades(FileNames) ->
@@ -160,11 +160,8 @@ single_market_data(FN) ->
 my_trades_data(FN) ->
     {ok, Bin} = file:read_file(FN),
     JSON = jiffy:decode(Bin),
-    {[{<<"success">>,1},
-      {<<"return">>,
-       {[{<<"markets">>,
-          {[{_Label,
-             {PL}}]}}]}}]} = JSON,
+    {[{<<"success">>,<<"1">>},
+      {<<"return">>, PL}]} = JSON,
     PL.
 
 curl_single_market_data(MId) ->
@@ -173,7 +170,7 @@ curl_single_market_data(MId) ->
     curl(public_endpoint, POSTData).
 
 curl_all_my_trades() ->
-    POSTData = "method=getinfo",
+    POSTData = "method=allmytrades",
     curl(auth_endpoint, POSTData).
 
 curl(public_endpoint, POSTData) ->
@@ -185,17 +182,25 @@ curl(auth_endpoint, POSTData0) ->
     {ok, Endpoint} = application:get_env(?APP, auth_endpoint),
     {ok, PublicKeyHexStr} = application:get_env(?APP, public_api_key),
     {ok, SecretKeyHexStr} = application:get_env(?APP, secret_api_key),
-    %PublicKey = hex_to_bin(PublicKeyHexStr),
-    SecretKey = hex_to_bin(SecretKeyHexStr),
     POSTData = POSTData0 ++ "&nonce=" ++ new_nonce(),
-    Sign = crypto:hmac(sha512, SecretKey, POSTData),
+    Sign = crypto:hmac(sha512, SecretKeyHexStr, POSTData),
     SignHex = string:to_lower(binary:bin_to_list(bin_to_hex(Sign))),
-    Header1 = "Sign: " ++ SignHex,
-    Header2 = " Key: " ++ PublicKeyHexStr,
-    Template = "curl --silent --header \"~s\" --header \"~s\" --data \"~s\" ~s",
-    Params = [Header1, Header2, POSTData, Endpoint],
+    Headers =
+        [{"Sign", SignHex},
+         {"Key", PublicKeyHexStr},
+         {"Content-Type", "application/x-www-form-urlencoded"},
+         {"Accept","*/*"},
+         {"Content-Length", integer_to_list(length(POSTData))}
+        ],
+    HeaderStr =
+        fun({HeaderFieldName, Value}) -> "--header \"" ++ HeaderFieldName ++
+                                             ": " ++ Value ++ "\" "
+        end,
+    FinalHeader = lists:flatten(lists:map(HeaderStr, Headers)),
+    Template = "curl --silent " ++ FinalHeader ++ "--data \"~s\" ~s",
+    Params = [POSTData, Endpoint],
     CMD = lists:flatten(io_lib:format(Template, Params)),
-    ?info("HURR ~s", [CMD]),
+    ?info("Curl: ~s", [CMD]),
     os:cmd(CMD).
     %ok.
 
@@ -255,10 +260,10 @@ update_data(FilePrefix, CurlFun) ->
     ?info("Market data for ~p outdated, fetching live data...", [FilePrefix]),
     try
         LiveData = CurlFun(),
-        {[{<<"success">>,1}, _]} = jiffy:decode(LiveData),
+        %%{[{<<"success">>,<<"1">>}, _]} = jiffy:decode(LiveData),
         NowSecs = calendar:datetime_to_gregorian_seconds(
                     calendar:universal_time()),
-        S = io_lib:format("~p_~p", [list_to_integer(FilePrefix), NowSecs]),
+        S = io_lib:format("~s_~p", [to_list(FilePrefix), NowSecs]),
         FN = filename:join(?MARKET_DATA_DIR, lists:flatten(S)),
         ok = file:write_file(FN, LiveData),
         FN
@@ -274,8 +279,7 @@ new_nonce() ->
     MS = integer_to_list(MegaSeconds * 1000000000000 +
                              Seconds * 1000000 +
                              MicroSeconds),
-    %string:sub_string(MS, 2, 11).
-    MS.
+    string:sub_string(MS, 1, 10).
 
 bin_to_hex(Bin) ->
     <<<<(case byte_size(H = integer_to_binary(X,16)) of
@@ -286,3 +290,8 @@ bin_to_hex(Bin) ->
 hex_to_bin(Hex) when is_list(Hex) -> hex_to_bin(binary:list_to_bin(Hex));
 hex_to_bin(Hex) ->
     <<<<(binary_to_integer(<<B1,B2>>, 16))>> || <<B1,B2>> <= Hex>>.
+
+to_list(L) when is_list(L) -> L;
+to_list(B) when is_binary(B) -> binary:bin_to_list(B);
+to_list(A) when is_atom(A) -> erlang:atom_to_list(A);
+to_list(I) when is_integer(I) -> erlang:integer_to_list(I).
