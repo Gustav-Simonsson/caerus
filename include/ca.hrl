@@ -16,7 +16,7 @@
 -define(MARKET_DATA_DIR,
         ?INTERNAL_FILE("market_data/")).
 
--define(MARKET_DATA_MAX_AGE, 900). %% Seconds
+-define(MARKET_DATA_MAX_AGE, 864000). %% Seconds
 
 -define(GV(Key, PL), proplists:get_value(Key, PL)).
 

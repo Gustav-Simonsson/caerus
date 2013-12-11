@@ -126,7 +126,7 @@ do_view_my_trades() ->
     ok.
 
 get_my_trades(FileNames) ->
-    FilePrefix = "my_trades",
+    FilePrefix = "mytrades",
     case market_files(FilePrefix, FileNames) of
         none ->
             case update_data(FilePrefix, fun() -> curl_all_my_trades() end) of
@@ -201,8 +201,8 @@ curl(auth_endpoint, POSTData0) ->
     Params = [POSTData, Endpoint],
     CMD = lists:flatten(io_lib:format(Template, Params)),
     ?info("Curl: ~s", [CMD]),
-    os:cmd(CMD).
-    %ok.
+    %%os:cmd(CMD).
+    ok.
 
 market_cur_name_to_int(CurName, CryptsyMarkets) ->
     {match, L} = re:run(CurName, "[[:alpha:]]+", [{capture, all, list}, global]),
@@ -245,11 +245,14 @@ market_files(Prefix, FileNames) ->
                 AbsFN = filename:join(?MARKET_DATA_DIR, FN),
                 case string:tokens(FN, "_") of
                     [Prefix, GregSecs] ->
-                        case (Now - list_to_integer(GregSecs)) >
+                        case (Age = (Now - list_to_integer(GregSecs))) >
                             ?MARKET_DATA_MAX_AGE of
                             true ->  ok = file:delete(AbsFN),
                                      Acc;
-                            false -> AbsFN
+                            false ->
+                                ?info("~p seconds old data file found...",
+                                      [Age]),
+                                AbsFN
                         end;
                     _ -> Acc
                 end

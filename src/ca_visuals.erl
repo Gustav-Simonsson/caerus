@@ -49,8 +49,10 @@ pretty_print_single_market_data(MarketData) ->
     io:format(Template, Params),
     ok.
 
-pretty_print_my_trades(MyTrades) ->
-    
+pretty_print_my_trades(Trades0) ->
+    Trades = lists:map(fun({L}) -> L end, Trades0),
+    Dates = lists:map(fun(L) -> ?GV(<<"datetime">>, L) end, Trades),
+    ?info("~p", [Dates]),
     ok.
 
 %%%============================================================================
