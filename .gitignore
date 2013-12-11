@@ -23,3 +23,5 @@ dialyzer.plt
 
 priv/*.dat
 priv/dets/*.dat
+
+priv/market_data/*
