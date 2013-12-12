@@ -25,17 +25,28 @@ build_markets_include_file_from_dump(Bin) ->
     ok = file:write_file(?MARKETS_FILE,
                          io_lib:format("~p.~n", [StaticMarketsData])),
     ok.
+
+cryptsy_datetime_to_calendar_datetime(Datetime) ->
+    [Y,M,D,H,Min,S] =
+        lists:map(fun erlang:list_to_integer/1,
+                  string:tokens(binary:bin_to_list(Datetime), "-: ")),
+    {{Y,M,D}, {H,Min,S}}.
+
+cryptsy_datetime_to_month_day(Datetime) ->
+    <<_:5/binary, MD:5/binary, _/binary>> = Datetime,
+    MD.
+
 %%%============================================================================
 %%% Internal functions
 %%%============================================================================
 strip_dynamic_data_from_market({Label, {PL}}) ->
     DynamicTags =
-        [?MARKET_LASTTRADEPRICE,
-         ?MARKET_VOLUME,
-         ?MARKET_LASTTRADETIME,
-         ?MARKET_RECENTTRADES,
-         ?MARKET_SELLORDERS,
-         ?MARKET_BUYORDERS
+        [?LASTTRADEPRICE,
+         ?VOLUME,
+         ?LASTTRADETIME,
+         ?RECENTTRADES,
+         ?SELLORDERS,
+         ?BUYORDERS
         ],
     Statics = [{Key, Value} || {Key, Value} <- PL,
                                not lists:member(Key, DynamicTags)],

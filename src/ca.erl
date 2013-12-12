@@ -207,8 +207,8 @@ curl(auth_endpoint, POSTData0) ->
 market_cur_name_to_int(CurName, CryptsyMarkets) ->
     {match, L} = re:run(CurName, "[[:alpha:]]+", [{capture, all, list}, global]),
     UpperCaseAlphas = string:to_upper(lists:concat(lists:append(L))),
-    IdAndName = fun({_, PL}) -> PC = ?GV(?MARKET_PRIMARYNAME, PL),
-                                {?GV(?MARKET_MARKETID, PL),
+    IdAndName = fun({_, PL}) -> PC = ?GV(?PRIMARYNAME, PL),
+                                {?GV(?MARKETID, PL),
                                  string:to_upper(binary:bin_to_list(PC))} end,
     IdsAndNames = lists:map(IdAndName, CryptsyMarkets),
     fuzzy_search(UpperCaseAlphas, IdsAndNames).

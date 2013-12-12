@@ -25,15 +25,34 @@
          {70, "CGB", "BTC"}
         ]).
 
--define(MARKET_MARKETID, <<"marketid">>).
--define(MARKET_LABEL, <<"label">>).
--define(MARKET_LASTTRADEPRICE, <<"lasttradeprice">>).
--define(MARKET_VOLUME, <<"volume">>).
--define(MARKET_LASTTRADETIME, <<"lasttradetime">>).
--define(MARKET_PRIMARYNAME,  <<"primaryname">>).
--define(MARKET_PRIMARYCODE, <<"primarycode">>).
--define(MARKET_SECONDARYNAME, <<"secondaryname">>).
--define(MARKET_SECONDARYCODE, <<"secondarycode">>).
--define(MARKET_RECENTTRADES, <<"recenttrades">>).
--define(MARKET_SELLORDERS, <<"sellorders">>).
--define(MARKET_BUYORDERS, <<"buyorders">>).
+%% marketdatav2
+-define(MARKETID,       <<"marketid">>).
+-define(LABEL,          <<"label">>).
+-define(LASTTRADEPRICE, <<"lasttradeprice">>).
+-define(VOLUME,         <<"volume">>).
+-define(LASTTRADETIME,  <<"lasttradetime">>).
+-define(PRIMARYNAME,    <<"primaryname">>).
+-define(PRIMARYCODE,    <<"primarycode">>).
+-define(SECONDARYNAME,  <<"secondaryname">>).
+-define(SECONDARYCODE,  <<"secondarycode">>).
+-define(RECENTTRADES,   <<"recenttrades">>).
+-define(SELLORDERS,     <<"sellorders">>).
+-define(BUYORDERS,      <<"buyorders">>).
+
+%% allmytrades
+-define(TRADEID,            <<"tradeid">>).
+-define(TRADETYPE,          <<"tradetype">>).
+-define(TRADETYPE_BUY,      <<"Buy">>).
+-define(TRADETYPE_SELL,     <<"Sell">>).
+-define(DATETIME,           <<"datetime">>).
+-define(TRADEPRICE,         <<"tradeprice">>).
+-define(QUANTITY,           <<"quantity">>).
+-define(FEE,                <<"fee">>).
+-define(TOTAL,              <<"total">>).
+-define(INITIATE_ORDERTYPE, <<"initiate_ordertype">>).
+-define(ORDER_ID,           <<"order_id">>).
+
+%% internal
+-define(SECS,              <<"seconds">>).
+-define(X,                 <<"x">>).
+-define(Y,                 <<"y">>).
