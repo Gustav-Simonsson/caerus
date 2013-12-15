@@ -16,14 +16,10 @@
 -define(MARKET_DATA_DIR,
         ?INTERNAL_FILE("market_data/")).
 
--define(MARKET_DATA_MAX_AGE, 864000). %% Seconds
+-define(MY_TRADES_DATA_MAX_AGE, 86400). %% Seconds
 
 -define(GV(Key, PL), proplists:get_value(Key, PL)).
 
--define(MARKET_IDS,
-        [
-         {70, "CGB", "BTC"}
-        ]).
 
 %% marketdatav2
 -define(MARKETID,       <<"marketid">>).

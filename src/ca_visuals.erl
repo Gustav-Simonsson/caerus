@@ -14,89 +14,82 @@
 %%%============================================================================
 %%% API
 %%%============================================================================
-pretty_print_single_market_data(MarketData) ->
-    [Label, LastTradeprice, LastTradeTime,
-     PrimaryName, _PrimaryCode, _SecondaryCode
-     % SellOrders, BuyOrders,
-     %_RecentTrades
-    ] =
-
-        [?GV(Key, MarketData) ||
-            Key <- [?LABEL,
-                    ?LASTTRADEPRICE,
-                    ?LASTTRADETIME,
-                    ?PRIMARYNAME,
-                    ?PRIMARYCODE,
-                    ?SECONDARYCODE
-                    %?RECENTTRADES
-                    %?SELLORDERS,
-                    %?BUYORDERS
-                   ]],
-    SecondsAgo = secs_since_last_trade(LastTradeTime),
-
-    TemplateLines =
-        [
-         "=====================================================",
-         "~s ~s ~p BTC ~p seconds ago ",
-         "",
-         "====================================================="
-        ],
-    Params = [PrimaryName,
-              Label,
-              list_to_float(binary:bin_to_list(LastTradeprice)),
-              SecondsAgo],
-    Template = lists:append([Line ++ "~n" || Line <- TemplateLines]),
-    io:format(Template, Params),
-    ok.
-
-pretty_print_my_trades(Trades0) ->
+pretty_print_my_trades(MyTrades0, MarketData0, Info) ->
     Sort = fun(Tag) -> fun(PL1, PL2) -> ?GV(Tag, PL1) > ?GV(Tag, PL2) end end,
     SortBy = fun(Tag, L) -> lists:sort(Sort(Tag), L) end,
     Filter = fun(Tag, Value) -> fun(PL) -> ?GV(Tag, PL) == Value end end,
     Pick = fun(A,B,Op) -> case erlang:Op(A, B) of true -> A; _ -> B end end,
+    LabelMatch = fun(Cur) -> Filter(?LABEL, <<Cur/binary, "/BTC">>) end,
 
-    [FirstTrade | Trades] = lists:map(fun({L}) -> L end, Trades0),
-    FirstMarketId = ?GV(?MARKETID, FirstTrade),
-    FirstMarketIdTrades = lists:filter(Filter(?MARKETID, FirstMarketId), Trades),
-    %
-    Traverse =
-        fun(PL, {First, Last, Cheapest, Priciest}) ->
-                Secs = calendar:datetime_to_gregorian_seconds(
-                         ca_util:cryptsy_datetime_to_calendar_datetime(
-                           ?GV(?DATETIME, PL))),
-                TradePrice = erlang:binary_to_float(?GV(?TRADEPRICE, PL)),
-                NewFirst    = Pick(First,    Secs,       '<'),
-                NewLast     = Pick(Last,     Secs,       '>'),
-                NewCheapest = Pick(Cheapest, TradePrice, '<'),
-                NewPriciest = Pick(Priciest, TradePrice, '>'),
-                NewPL = [{?SECS, Secs}] ++ PL,
-                {NewPL, {NewFirst, NewLast, NewCheapest, NewPriciest}}
-        end,
-    %?info("HURR ~p", [FirstMarketIdTrades]),
+    Markets = get_markets(),
 
-    {FirstTrades, {First, Last, Cheapest, Priciest}} =
-        lists:mapfoldl(Traverse, {now_secs(), 0, 1010011100110100111001, 0},
-                    FirstMarketIdTrades),
-    ?info("~p", [{First, Last, Cheapest, Priciest}]),
-    H = 40,
-    W = 80,
-    Wi = (Last - First) / W,
-    Hi = (Priciest - Cheapest) / H,
-    AddCoords =
-        fun(PL) ->
-                TradePrice = erlang:binary_to_float(?GV(?TRADEPRICE, PL)),
-                Secs = ?GV(?SECS, PL),
-                [{?Y, round((Priciest - TradePrice) / Hi)},
-                 {?X, round((Last - Secs) / Wi)}] ++ PL
+    {[{<<"balances_available">>,{Balances0}} | _]} = Info,
+    Balances = lists:filter(fun({_, FB}) -> 0 /= binary_to_float(FB) end,
+                            Balances0),
+
+    {[{<<"markets">>, {MarketData1}}]} = MarketData0,
+    MarketData = lists:map(fun({_Label, {L}}) -> L end, MarketData1),
+
+    Trades = SortBy(?DATETIME, lists:map(fun({L}) -> L end, MyTrades0)),
+
+    BTCValue =
+        fun({<<"BTC">>, FB}) ->
+                binary_to_float(FB);
+           ({Cur, FB}) ->
+                [PL] = lists:filter(LabelMatch(Cur), MarketData),
+                LTP = ?GV(?LASTTRADEPRICE, PL),
+                binary_to_float(FB) *  binary_to_float(LTP)
         end,
-    T2 = lists:map(AddCoords, FirstTrades),
-    SortByYThenX =
-        fun(PL1, PL2) -> case (Y1 = ?GV(?Y, PL1)) == (Y2 = ?GV(?Y, PL2)) of
-                             true -> (Sort(?X))(PL1, PL2);
-                             false -> Y1 > Y2
-                         end end,
-    T3 = lists:sort(SortByYThenX, T2),
-    ?info("~p", []),
+    TotalBTC = lists:sum(lists:map(BTCValue, Balances)),
+
+    AltsAcc = lists:map(fun({Cur, _}) ->
+                                [PL] = lists:filter(LabelMatch(Cur), Markets),
+                                {?GV(?MARKETID, PL), Cur, []}
+                        end, lists:keydelete(<<"BTC">>, 1, Balances)),
+
+    SumUp =
+        fun(PL, Acc) ->
+                G = fun(Tag) -> ?GV(Tag, PL) end,
+                TP  = binary_to_float(G(?TRADEPRICE)),
+                Q   = binary_to_float(G(?QUANTITY)),
+                MId = G(?MARKETID),
+                TT  = G(?TRADETYPE),
+                NegateBuys =
+                    fun(Buy, 0) -> {Buy, 0};
+                       ({BTP, BQ}, SellQLeft) when BQ < SellQLeft ->
+                            {{BTP, 0}, SellQLeft - BQ};
+                       ({BTP, BQ}, SellQLeft) ->
+                            {{BTP, BQ - SellQLeft}, 0}
+                    end,
+
+                NewAcc =
+                    case lists:keyfind(MId, 1, Acc) of
+                        false -> Acc;
+                        {M, C, Buys} ->
+
+                            case TT of
+                                ?TRADETYPE_BUY ->
+                                    case M of <<"70">> ->
+                                    io:format("~p + ", [Q]);
+                                        _ -> ok
+                                    end,
+
+                                    New = {M, C, [{TP, Q} | Buys]},
+                                    lists:keyreplace(MId, 1, Acc, New);
+                                ?TRADETYPE_SELL ->
+
+                                    {NewBuys, _} =
+                                        lists:mapfoldl(NegateBuys, Q, Buys),
+                                    NewAltAcc = {M, C, NewBuys},
+                                    lists:keyreplace(MId, 1, Acc, NewAltAcc)
+                            end
+                    end
+        end,
+    X = lists:foldl(SumUp, AltsAcc, Trades),
+    %?info("~p", [float_round(TotalBTC, 4)]),
+
+    ?info("~p", [lists:last(lists:reverse(X))]),
+    ?info("~p", [lists:last(lists:reverse(AltsAcc))]),
     ok.
 
 %%%============================================================================
@@ -109,3 +102,10 @@ secs_since_last_trade(LastTradeTime) ->
 
 now_secs() ->
     calendar:datetime_to_gregorian_seconds(calendar:universal_time()).
+
+float_round(FloatBin, Precision) when is_binary(FloatBin) ->
+    float_round(binary_to_float(FloatBin), Precision);
+float_round(FloatStr, Precision) when is_list(FloatStr) ->
+    float_round(list_to_float(FloatStr), Precision);
+float_round(Float, Precision) ->
+    io_lib:format("~." ++ integer_to_list(Precision) ++ "f", [Float]).
