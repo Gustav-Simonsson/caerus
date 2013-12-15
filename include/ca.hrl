@@ -16,24 +16,47 @@
 -define(MARKET_DATA_DIR,
         ?INTERNAL_FILE("market_data/")).
 
+-define(MY_TRADES_DATA_MAX_AGE, 10800). %% Seconds
 -define(MARKET_DATA_MAX_AGE, 900). %% Seconds
+-define(API_PAUSE, 2). %% seconds between multiple consecutive API calls
 
 -define(GV(Key, PL), proplists:get_value(Key, PL)).
 
--define(MARKET_IDS,
-        [
-         {70, "CGB", "BTC"}
-        ]).
+%% graph visuals
+-define(TABLE_WIDTH, 80).
+-define(TABLE_COLUMN_OFFSET, 14).
+-define(TABLE_COLUMNS,
+        ["Currency", "Quantity", "Last Trade", "% vs BTC", "% of Assets",
+         "BTC equivalent"]).
 
--define(MARKET_MARKETID, <<"marketid">>).
--define(MARKET_LABEL, <<"label">>).
--define(MARKET_LASTTRADEPRICE, <<"lasttradeprice">>).
--define(MARKET_VOLUME, <<"volume">>).
--define(MARKET_LASTTRADETIME, <<"lasttradetime">>).
--define(MARKET_PRIMARYNAME,  <<"primaryname">>).
--define(MARKET_PRIMARYCODE, <<"primarycode">>).
--define(MARKET_SECONDARYNAME, <<"secondaryname">>).
--define(MARKET_SECONDARYCODE, <<"secondarycode">>).
--define(MARKET_RECENTTRADES, <<"recenttrades">>).
--define(MARKET_SELLORDERS, <<"sellorders">>).
--define(MARKET_BUYORDERS, <<"buyorders">>).
+%% marketdatav2
+-define(MARKETID,       <<"marketid">>).
+-define(LABEL,          <<"label">>).
+-define(LASTTRADEPRICE, <<"lasttradeprice">>).
+-define(VOLUME,         <<"volume">>).
+-define(LASTTRADETIME,  <<"lasttradetime">>).
+-define(PRIMARYNAME,    <<"primaryname">>).
+-define(PRIMARYCODE,    <<"primarycode">>).
+-define(SECONDARYNAME,  <<"secondaryname">>).
+-define(SECONDARYCODE,  <<"secondarycode">>).
+-define(RECENTTRADES,   <<"recenttrades">>).
+-define(SELLORDERS,     <<"sellorders">>).
+-define(BUYORDERS,      <<"buyorders">>).
+
+%% allmytrades
+-define(TRADEID,            <<"tradeid">>).
+-define(TRADETYPE,          <<"tradetype">>).
+-define(TRADETYPE_BUY,      <<"Buy">>).
+-define(TRADETYPE_SELL,     <<"Sell">>).
+-define(DATETIME,           <<"datetime">>).
+-define(TRADEPRICE,         <<"tradeprice">>).
+-define(QUANTITY,           <<"quantity">>).
+-define(FEE,                <<"fee">>).
+-define(TOTAL,              <<"total">>).
+-define(INITIATE_ORDERTYPE, <<"initiate_ordertype">>).
+-define(ORDER_ID,           <<"order_id">>).
+
+%% internal
+-define(SECS,              <<"seconds">>).
+-define(X,                 <<"x">>).
+-define(Y,                 <<"y">>).
