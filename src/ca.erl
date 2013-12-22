@@ -229,7 +229,9 @@ do_view_my_trades() ->
     ok.
 
 get_info() ->
-    get_json({"getinfo", ?MY_TRADES_DATA_MAX_AGE},
+    get_json({"getinfo",
+              ?MY_TRADES_DATA_MAX_AGE
+             },
              {auth_endpoint, "method=getinfo"}).
 
 get_my_trades(MId) ->
@@ -379,10 +381,12 @@ float_round(FloatBin, Precision) when is_binary(FloatBin) ->
     float_round(binary_to_float(FloatBin), Precision);
 float_round(FloatStr, Precision) when is_list(FloatStr) ->
     float_round(list_to_float(FloatStr), Precision);
+float_round(0, Precision) -> float_round(0.0, Precision);
 float_round(Float, Precision) ->
     Rounded = io_lib:format("~." ++ integer_to_list(Precision) ++ "f", [Float]),
     lists:flatten(Rounded).
 
+percent(_A,B) when (B == 0) == true -> 0.0;
 percent(A,B) -> ((A / B) - 1.0) * 100.0.
 
 pick(A,B,Op) -> case erlang:Op(A, B) of true -> A; _ -> B end.

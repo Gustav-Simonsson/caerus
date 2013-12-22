@@ -16,8 +16,8 @@
 -define(MARKET_DATA_DIR,
         ?INTERNAL_FILE("market_data/")).
 
--define(MY_TRADES_DATA_MAX_AGE, 10800). %% Seconds
--define(MARKET_DATA_MAX_AGE, 900). %% Seconds
+-define(MY_TRADES_DATA_MAX_AGE, 600). %% Seconds
+-define(MARKET_DATA_MAX_AGE, 600). %% Seconds
 -define(API_PAUSE, 2). %% seconds between multiple consecutive API calls
 
 -define(GV(Key, PL), proplists:get_value(Key, PL)).
